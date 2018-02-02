@@ -21,7 +21,11 @@
 	<div id="map"></div>
 
 <script>
-	var map = new L.Map('map', {
+var mapNode = document.getElementById('map');
+if (!L) {
+	mapNode.innerHTML = 'Ошибка соеденения с сервером www.kosmosnimki.ru. Обновите страницу!';
+} else {
+	var map = new L.Map(mapNode, {
 		center: new L.LatLng(56, 137.23),
 		zoom: 9
 	});
@@ -124,7 +128,7 @@ if (id) {
 			}
 		});
 }
-
+}
 </script>
 
 </body>
