@@ -52,6 +52,7 @@ if (id) {
 		.then(function(response) { return response.json(); })
 		.then(function(json) {
 			if (json && json.Status === 'ok') {
+				LayersControl.expand();
 				json = JSON.parse(json.Result);
 
 				map.fitBounds(L.latLngBounds(json.bounds._northEast, json.bounds._southWest));
