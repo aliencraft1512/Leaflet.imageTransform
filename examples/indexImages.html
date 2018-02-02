@@ -104,7 +104,7 @@ if (id) {
 							overlay.addLayer(imageTransform);
 
 							if (drawAnchors) { drawAnchors.remove(); }
-							drawAnchors = new L.GmxDrawing.Feature(map.gmxDrawing, polygonAnchors, {editable: true, disableAddPoints: true, type: 'Polygon', pointStyle: {shape: 'box'}});
+							drawAnchors = new L.GmxDrawing.Feature(map.gmxDrawing, polygonAnchors, {editable: true, disableAddPoints: true, type: 'Polygon', lineStyle: {color: 'blue'}, pointStyle: {shape: 'box'}});
 							drawAnchors
 								.on('edit', function() {
 									var latlngs = drawAnchors.getLayers()[0].points.getLatLngs()[0];
