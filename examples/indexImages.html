@@ -33,10 +33,17 @@
 			maxNativeZoom: 17
 		}).addTo(map)
 	}).addTo(map);
-	
-var arr = location.search.match(/perm=(\w+)/);
-if (arr && arr.length === 2) {
-	var perm = arr[1];
+
+var id = '';
+if (location.search) {
+	id = location.search.substr(1);
+	var arr = id.match(/perm=(\w+)/);
+	if (arr && arr.length === 2) {
+		id = arr[1];
+	}
+}
+if (id) {
+	var perm = id;
 	fetch('//maps.kosmosnimki.ru/TinyReference/Get.ashx?WrapStyle=None&id=' + perm)
 		.then(function(response) { return response.json(); })
 		.then(function(json) {
