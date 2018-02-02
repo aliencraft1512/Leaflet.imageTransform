@@ -5,9 +5,9 @@ Leaflet.imageTransform
 
 ##Demos
 
-  * [Edit anchor points and clip polygon](http://scanex.github.io/Leaflet.imageTransform/examples/Editing.html)
-  * [Landsat qucklooks gallery](http://scanex.github.io/Leaflet.imageTransform/examples/Landsat8.html)
-  * [Check search permalinks](http://scanex.github.io/Leaflet.imageTransform/examples/indexImages.html?C7J8R)
+  * [Edit anchor points and clip polygon](//scanex.github.io/Leaflet.imageTransform/examples/Editing.html)
+  * [Landsat qucklooks gallery](//scanex.github.io/Leaflet.imageTransform/examples/Landsat8.html)
+  * [Check search permalinks](//scanex.github.io/Leaflet.imageTransform/examples/indexImages.html?C7J8R)
 
 
 ##Usage
