@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+    <script src="//www.kosmosnimki.ru/lib/geomixer_1.3/geomixer-src.js?key=E5FB6CCB5D23B5E119D2F1B26BCC57BD"></script>
+    <link href="//www.kosmosnimki.ru/lib/geomixer_1.3/geomixer.css" rel="stylesheet" />
+
+    <style>
+        html, body, #map, #screenCanvas {
+            height: 100%;
+            width: 100%;
+            margin: 0px;
+        }
+    </style>
+	<title>GeoMixer API - примеры ппермалинков</title>
+</head>
+
+<body>
+	<div id="map"></div>
+
+<script>
+	var map = new L.Map('map', {
+		center: new L.LatLng(56, 137.23),
+		zoom: 9
+	});
+
+	var LayersControl = L.control.layers({
+		Google: L.tileLayer('//mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'),
+		Map: L.tileLayer.Mercator('//vec03.maps.yandex.net/tiles?l=map&v=17.09.21-1&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
+			maxZoom: 21,
+			maxNativeZoom: 17
+		}).addTo(map)
+	}).addTo(map);
+	
+var arr = location.search.match(/perm=(\w+)/);
+if (arr && arr.length === 2) {
+	var perm = arr[1];
+	fetch('//maps.kosmosnimki.ru/TinyReference/Get.ashx?WrapStyle=None&id=' + perm)
+		.then(function(response) { return response.json(); })
+		.then(function(json) {
+			if (json && json.Status === 'ok') {
+				json = JSON.parse(json.Result);
+
+				map.fitBounds(L.latLngBounds(json.bounds._northEast, json.bounds._southWest));
+				json.items.forEach(function(it) {
+
+					var coordinates = it.geoJSON.coordinates[0];
+					if (it.geoJSON.type === 'MultiPolygon') { coordinates = coordinates[0]; }
+					coordinates = coordinates.map(function(p){return p.reverse();});
+					
+					var anch = [[it.y1, it.x1], [it.y2, it.x2], [it.y3, it.x3], [it.y4, it.x4]],
+						polygonAnchors = L.polygon(anch, {color: 'red'}),
+						clip = coordinates,
+						polygonClip = L.polygon(clip),
+						overlay = L.featureGroup([polygonAnchors, polygonClip], it),
+						drawAnchors,
+						drawClip,
+						imageTransform,
+						center = polygonAnchors.getBounds().getCenter(),
+						getButton = function() {
+							var txt, butt;
+							if (imageTransform) {
+								txt = '<button>Завершить редактирование</button>';
+								butt = L.marker(center, {icon: L.divIcon({className: 'my-div-icon', html: txt})}).on('click', init);
+							} else {
+								txt = '<button>Редактировать</button>';
+								butt = L.marker(center, {icon: L.divIcon({className: 'my-div-icon', html: txt})});
+							}
+							overlay.addLayer(butt);
+						},
+						init = function() {
+							overlay.clearLayers();
+							overlay.addLayer(polygonAnchors);
+							overlay.addLayer(polygonClip);
+							if (drawAnchors) {
+								console.log('Точки привязки:', it.sceneid, drawAnchors.toGeoJSON());
+							}
+							if (drawClip) {
+								console.log('Полигон обрезки:', it.sceneid, drawClip.toGeoJSON());
+							}
+							imageTransform = null;
+							getButton();
+						};
+					overlay
+						.on('add', init, this)
+						.on('remove', overlay.clearLayers, overlay)
+						.on('click', function(ev) {
+							overlay.clearLayers();
+							imageTransform = L.imageTransform(it.url, anch, { opacity: 1, clip: clip, disableSetClip: false });
+							overlay.addLayer(imageTransform);
+
+							if (drawAnchors) { drawAnchors.remove(); }
+							drawAnchors = new L.GmxDrawing.Feature(map.gmxDrawing, polygonAnchors, {editable: true, disableAddPoints: true, type: 'Polygon', pointStyle: {shape: 'box'}});
+							drawAnchors
+								.on('edit', function() {
+									var latlngs = drawAnchors.getLayers()[0].points.getLatLngs()[0];
+									imageTransform.setOpacity(0.5);
+									imageTransform.setAnchors(latlngs);
+								})
+								.on('editstop', function() {
+									imageTransform.setOpacity(1);
+								});
+							overlay.addLayer(drawAnchors);
+
+							drawClip = new L.GmxDrawing.Feature(map.gmxDrawing, polygonClip, {editable: true, type: 'Polygon', lineStyle: {color: 'red'}, pointStyle: {color: 'red'}});
+							drawClip.on('edit', function(ev) {
+								var latlngs = drawClip.getLayers()[0].points.getLatLngs()[0];
+								imageTransform.setClip(latlngs);
+							});
+							overlay.addLayer(drawClip);
+							getButton();
+						}, this);
+					LayersControl.addOverlay(overlay, it.sceneid);
+				});
+			}
+		});
+}
+
+</script>
+
+</body>
+</html>
