@@ -113,6 +113,18 @@ L.ImageTransform = L.ImageOverlay.extend({
     },
 
     _onImageLoad: function () {
+		if (this._imgNode.decode) {
+			this._imgNode.decode({notifyWhen: 'paintable'})		// {firstFrameOnly: true}
+				.then(L.bind(this._imageReady, this))
+				.catch(function (ev) {
+					throw new Error(ev);
+				});
+		} else {
+			this._imageReady();
+		}
+    },
+
+    _imageReady: function () {
         if (this.options.clip) {
             this._canvas.width = this._imgNode.width;
             this._canvas.height = this._imgNode.height;
