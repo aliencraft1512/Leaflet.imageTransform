@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+    <script src="//www.kosmosnimki.ru/lib/geomixer_1.3/geomixer-src.js?key=E5FB6CCB5D23B5E119D2F1B26BCC57BD"></script>
+    <link href="//www.kosmosnimki.ru/lib/geomixer_1.3/geomixer.css" rel="stylesheet" />
+
+    <style>
+        html, body, .map {
+            height: 100%;
+            width: 100%;
+            margin: 0px;
+        }
+    </style>
+	<title>GeoMixer API - примеры ппермалинков</title>
+</head>
+
+<body>
+	<div class="map"></div>
+
+<script>
+var mapNode = document.body.getElementsByClassName('map')[0];
+if (!L) {
+	mapNode.innerHTML = 'Ошибка соеденения с сервером www.kosmosnimki.ru. Обновите страницу!';
+} else {
+	var map = new L.Map(mapNode, {
+		center: new L.LatLng(56, 137.23),
+		zoom: 4
+	});
+
+	var LayersControl = L.control.layers({
+		Google: L.tileLayer('//mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'),
+		Map: L.tileLayer.Mercator('//vec03.maps.yandex.net/tiles?l=map&v=17.09.21-1&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
+			maxZoom: 21,
+			maxNativeZoom: 17
+		}).addTo(map)
+	}).addTo(map);
+
+var id = '';
+if (location.search) {
+	id = location.search.substr(1);
+	var arr = id.match(/perm=(\w+)/);
+	if (arr && arr.length === 2) {
+		id = arr[1];
+	}
+}
+var Quicklook = {
+	template: '//search.kosmosnimki.ru/QuickLookImage.ashx?id=[sceneid]&width=300&height=300',
+	minZoom: 6
+};
+
+var getLayer = function(items) {
+	var identityField = 'gmx_id',
+		geometryKey = 'geoJSON',
+		dataByID = {},
+		attr = L.extend({}, items[0]);
+
+	delete attr[identityField];
+	delete attr[geometryKey];
+	var attributes = Object.keys(attr),
+		data = items.map(function(hash, i) {
+			var id = hash[identityField],
+				arr = attributes.map(function(it) {
+					return hash[it];
+				});
+			arr.unshift(id);
+			arr.push(L.gmxUtil.convertGeometry(hash[geometryKey], false, true));
+			dataByID[id] = i;
+			return arr;
+		});
+
+    var _layer = L.gmx.createLayer({
+		properties: {
+			type: 'Vector',
+			GeometryType: 'polygon',
+			visible: true,
+			zIndexOffset: 1000000,
+			srs: 3857,
+			identityField: identityField,
+			Quicklook: JSON.stringify(Quicklook),
+			attributes: attributes,
+			attrTypes: attributes.map(function(key) {
+				return typeof attr[key];
+			})
+		}
+	});
+	var indexes = _layer.getTileAttributeIndexes(),
+		vnum = indexes.visible;
+		
+	//window.test = _layer;
+	return _layer
+		.addData(data)
+		.bindPopup('', { maxWidth: 560 })
+		.on('popupopen', function(ev) {
+			var popup = ev.popup,
+				props = ev.gmx.properties,
+				container = L.DomUtil.create('div', 'myPopup'),
+				prop = L.DomUtil.create('div', 'myName', container);
+				image = L.DomUtil.create('img', 'myImage', container);
+			
+			prop.innerHTML = '<h3>' + props['sceneid'] + '</h3>';
+			L.extend(image, {
+				width: 300,
+				galleryimg: 'no',
+				onselectstart: L.Util.falseFn,
+				onmousemove: L.Util.falseFn,
+				onload: function(ev) {
+					popup.update();
+				},
+				src: props['url']
+			});
+			prop = L.DomUtil.create('div', 'myName', container);
+			prop.innerHTML = '<b>Платформа:</b> ' + props['platform'];
+			prop = L.DomUtil.create('div', 'myName', container);
+			prop.innerHTML = '<b>Сцена:</b> ' + props['sceneid'];
+			popup.setContent(container);
+		})
+		.on('click', function(ev) {
+			if (!ev.originalEvent.ctrlKey) {
+				var gmx = ev.gmx,
+					raw = data[dataByID[gmx.id]];
+				raw[indexes.visible] = raw[vnum] === 'hidden' ? 'visible' : 'hidden';
+			}
+		})
+		.setStyleHook(function(it) {
+			return {
+				skipRasters: it.properties[vnum] === 'hidden'
+			};
+		});
+};
+
+if (id) {
+	var perm = id;
+	fetch('//maps.kosmosnimki.ru/TinyReference/Get.ashx?WrapStyle=None&id=' + perm)
+		.then(function(response) { return response.json(); })
+		.then(function(json) {
+			if (json && json.Status === 'ok') {
+				json = JSON.parse(json.Result);
+
+				map.fitBounds(L.latLngBounds(json.bounds._northEast, json.bounds._southWest));
+				var quicklooks = getLayer(json.items);
+				LayersControl.addOverlay(quicklooks, perm);
+				map.addLayer(quicklooks);
+			}
+		});
+}
+}
+
+</script>
+
+</body>
+</html>
