@@ -42,7 +42,7 @@ if (!L) {
 var id = '';
 if (location.search) {
 	id = location.search.substr(1);
-	var arr = id.match(/perm=(\w+)/);
+	var arr = id.match(/[link|perm]=(\w+)/);
 	if (arr && arr.length === 2) {
 		id = arr[1];
 	}
@@ -143,7 +143,7 @@ if (id) {
 				json = JSON.parse(json.Result);
 
 				map.fitBounds(L.latLngBounds(json.bounds._northEast, json.bounds._southWest));
-				var quicklooks = getLayer(json.items);
+				var quicklooks = getLayer(json.items.concat(json.cart));
 				LayersControl.addOverlay(quicklooks, perm);
 				map.addLayer(quicklooks);
 			}
