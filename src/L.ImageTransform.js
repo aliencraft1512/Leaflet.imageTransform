@@ -22,18 +22,19 @@ L.ImageTransform = L.ImageOverlay.extend({
     },
 
     setClip: function(clipLatLngs) {
-        var topLeft = this._latLngToLayerPoint(this._bounds.getNorthWest()),
-            pixelClipPoints = [];
+        var topLeft = this._latLngToLayerPoint(this._bounds.getNorthWest());
 
         this.options.clip = clipLatLngs;
 
-        for (var p = 0; p < clipLatLngs.length; p++) {
-            var mercPoint = this._latLngToLayerPoint(clipLatLngs[p]),
-                pixel = L.ImageTransform.Utils.project(this._matrix3dInverse, mercPoint.x - topLeft.x, mercPoint.y - topLeft.y);
-            pixelClipPoints.push(L.point(pixel[0], pixel[1]));
-        }
-
-        this.setClipPixels(pixelClipPoints);
+        var coordsArr = [[clipLatLngs]];
+		if (!L.Util.isArray(clipLatLngs)) {
+			this._clipFormat = 'geoJson';
+			coordsArr = clipLatLngs.coordinates;
+			if (clipLatLngs.type === 'Polygon') {
+				coordsArr = [coordsArr];
+			}
+		}
+		this.setClipPixels(this._coordsPixels(coordsArr, true));
     },
 
     setClipPixels: function(pixelClipPoints) {
@@ -52,7 +53,21 @@ L.ImageTransform = L.ImageOverlay.extend({
     },
 
     getClip: function() {
-        return this.options.clip;
+		if (this._clipFormat === 'geoJson') {
+			return this.options.clip;
+		}
+		var arr = this.options.clip.coordinates,
+			res = [];
+
+		for (var i = 0, len = arr.length; i < len; i++) {
+			for (var j = 0, len1 = arr[i].length; j < len1; j++) {
+				for (var p = 0, len2 = arr[i][j].length; p < len2; p++) {
+					var latlng = arr[i][j][p];
+					res.push([latlng[1], latlng[0]]);
+				}
+			}
+		}
+		return res;
     },
 
     _imgLoaded: false,
@@ -182,17 +197,45 @@ L.ImageTransform = L.ImageOverlay.extend({
         imgNode.style[L.DomUtil.TRANSFORM] = this._getMatrix3dCSS(this._matrix3d);
         if (this.options.clip) {
             if (this._pixelClipPoints) {
-                this.options.clip = [];
-                for (p = 0; p < this._pixelClipPoints.length; p++) {
-                    var mercPoint = L.ImageTransform.Utils.project(matrix3d, this._pixelClipPoints[p].x, this._pixelClipPoints[p].y);
-                    this.options.clip.push(this._map.layerPointToLatLng(L.point(mercPoint[0] + topLeft.x, mercPoint[1] + topLeft.y)));
-                }
-
+                this.options.clip = {
+					type: 'MultiPolygon',
+					coordinates: this._coordsPixels(this._pixelClipPoints)
+				};
                 this._drawCanvas();
             } else {
                 this.setClip(this.options.clip);
             }
         }
+    },
+
+    _coordsPixels: function(fromCoords, toPixelFlag) {
+        var topLeft = this._latLngToLayerPoint(this._bounds.getNorthWest()),
+            toCoords = [];
+
+		for (var i = 0, len = fromCoords.length; i < len; i++) {
+			var ringHells = [];
+			for (var j = 0, len1 = fromCoords[i].length; j < len1; j++) {
+				var arr = [],
+					ring = fromCoords[i][j];
+				for (var p = 0, len2 = ring.length, pixel, tp, mp; p < len2; p++) {
+					if (toPixelFlag) {
+						tp = this._clipFormat === 'geoJson' ? [ring[p][1], ring[p][0]] : ring[p];
+						mp = this._latLngToLayerPoint(tp);
+						pixel = L.ImageTransform.Utils.project(this._matrix3dInverse, mp.x - topLeft.x, mp.y - topLeft.y);
+						arr.push(L.point(pixel[0], pixel[1]));
+					} else {
+						pixel = ring[i];
+						tp = L.ImageTransform.Utils.project(this._matrix3d, pixel.x, pixel.y);
+						mp = this._map.layerPointToLatLng(L.point(tp[0] + topLeft.x, tp[1] + topLeft.y));
+						arr.push([mp.lng, mp.lat]);
+					}
+				}
+				ringHells.push(arr);
+ 			}
+			toCoords.push(ringHells);
+        }
+
+        return toCoords;
     },
 
     _getMatrix3dCSS: function(arr)	{		// get CSS atribute matrix3d
@@ -213,13 +256,19 @@ L.ImageTransform = L.ImageOverlay.extend({
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = ctx.createPattern(this._imgNode, 'no-repeat');
 
-            ctx.beginPath();
-            for (var i = 0, len = this._pixelClipPoints.length; i < len; i++) {
-                var pix = this._pixelClipPoints[i];
-                ctx[i ? 'lineTo' : 'moveTo'](pix.x, pix.y);
-            }
-            ctx.closePath();
-            ctx.fill();
+			for (var i = 0, len = this._pixelClipPoints.length; i < len; i++) {
+				for (var j = 0, len1 = this._pixelClipPoints[i].length; j < len1; j++) {
+					ctx.beginPath();
+					var ring = this._pixelClipPoints[i][j];
+					for (var p = 0, len2 = ring.length; p < len2; p++) {
+						var pix = ring[p];
+						ctx[p ? 'lineTo' : 'moveTo'](pix.x, pix.y);
+					}
+					ctx.closePath();
+					ctx.fill();
+				}
+			}
+
             ctx.fillStyle = null;
             if (this.options.disableSetClip) {
                 this._imgNode = null;
