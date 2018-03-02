@@ -6,7 +6,7 @@ Leaflet.imageTransform
 ##Demos
 
   * [Edit anchor points and clip polygon](//scanex.github.io/Leaflet.imageTransform/examples/Editing.html)
-  * [clip by geoJSON](//scanex.github.io/Leaflet.imageTransform/examples/geoJson.html)
+  * [Clip by geoJSON](//scanex.github.io/Leaflet.imageTransform/examples/geoJson.html)
   * [Landsat qucklooks gallery](//scanex.github.io/Leaflet.imageTransform/examples/Landsat8.html)
   * [Check search permalinks](//scanex.github.io/Leaflet.imageTransform/examples/indexImages.html?C7J8R)
 

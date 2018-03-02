@@ -35,7 +35,7 @@
 		};
 		var anchors = [[47.20627509437822, 37.60396957397461], [47.20802436605374, 37.73983955383301], [47.14804977458752, 37.73271560668945], [47.14495586297567, 37.59993553161621]];	// [lat, lng]
 
-        var image = L.imageTransform('img/QuickLookImage1.jpg', anchors, { opacity: 0.5, clip: geoJSON, disableSetClip: false }).addTo(map);
+        var image = L.imageTransform('./img/QuickLookImage1.jpg', anchors, { opacity: 0.5, clip: geoJSON, disableSetClip: false }).addTo(map);
         L.polygon(anchors, {fill: false}).addTo(map);
         L.geoJson(geoJSON, {fill: false, color: 'red'}).addTo(map);
 	</script>
