@@ -257,16 +257,16 @@ L.ImageTransform = L.ImageOverlay.extend({
             ctx.fillStyle = ctx.createPattern(this._imgNode, 'no-repeat');
 
 			for (var i = 0, len = this._pixelClipPoints.length; i < len; i++) {
+				ctx.beginPath();
 				for (var j = 0, len1 = this._pixelClipPoints[i].length; j < len1; j++) {
-					ctx.beginPath();
 					var ring = this._pixelClipPoints[i][j];
 					for (var p = 0, len2 = ring.length; p < len2; p++) {
 						var pix = ring[p];
 						ctx[p ? 'lineTo' : 'moveTo'](pix.x, pix.y);
 					}
-					ctx.closePath();
-					ctx.fill();
 				}
+				ctx.closePath();
+				ctx.fill();
 			}
 
             ctx.fillStyle = null;
