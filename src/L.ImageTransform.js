@@ -22,8 +22,6 @@ L.ImageTransform = L.ImageOverlay.extend({
     },
 
     setClip: function(clipLatLngs) {
-        var topLeft = this._latLngToLayerPoint(this._bounds.getNorthWest());
-
         this.options.clip = clipLatLngs;
 
         var coordsArr = [[clipLatLngs]];
