@@ -28,7 +28,7 @@ L.ImageTransform = L.ImageOverlay.extend({
 		if (!L.Util.isArray(clipLatLngs)) {
 			this._clipFormat = 'geoJson';
 			coordsArr = clipLatLngs.coordinates;
-			if (clipLatLngs.type === 'Polygon') {
+			if (clipLatLngs.type.toLowerCase() === 'polygon') {
 				coordsArr = [coordsArr];
 			}
 		}
