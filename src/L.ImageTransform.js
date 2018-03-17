@@ -27,12 +27,38 @@ L.ImageTransform = L.ImageOverlay.extend({
         var coordsArr = [[clipLatLngs]];
 		if (!L.Util.isArray(clipLatLngs)) {
 			this._clipFormat = 'geoJson';
+			this._clipType = clipLatLngs.type;
 			coordsArr = clipLatLngs.coordinates;
-			if (clipLatLngs.type.toLowerCase() === 'polygon') {
+			if (this._clipType.toLowerCase() === 'polygon') {
 				coordsArr = [coordsArr];
 			}
 		}
 		this.setClipPixels(this._coordsPixels(coordsArr, true));
+    },
+
+    getClip: function() {
+		if (this._clipFormat === 'geoJson') {
+			var coords = this._coordsPixels(this._pixelClipPoints);
+ 			if (this._clipType.toLowerCase() === 'polygon') {
+				coords = coords[0];
+			}
+           return {
+				type: this._clipType,
+				coordinates: coords
+			};
+		}
+		var arr = this.options.clip.coordinates,
+			res = [];
+
+		for (var i = 0, len = arr.length; i < len; i++) {
+			for (var j = 0, len1 = arr[i].length; j < len1; j++) {
+				for (var p = 0, len2 = arr[i][j].length; p < len2; p++) {
+					var latlng = arr[i][j][p];
+					res.push([latlng[1], latlng[0]]);
+				}
+			}
+		}
+		return res;
     },
 
     setClipPixels: function(pixelClipPoints) {
@@ -48,24 +74,6 @@ L.ImageTransform = L.ImageOverlay.extend({
 
     getAnchors: function() {
         return this._anchors;
-    },
-
-    getClip: function() {
-		if (this._clipFormat === 'geoJson') {
-			return this.options.clip;
-		}
-		var arr = this.options.clip.coordinates,
-			res = [];
-
-		for (var i = 0, len = arr.length; i < len; i++) {
-			for (var j = 0, len1 = arr[i].length; j < len1; j++) {
-				for (var p = 0, len2 = arr[i][j].length; p < len2; p++) {
-					var latlng = arr[i][j][p];
-					res.push([latlng[1], latlng[0]]);
-				}
-			}
-		}
-		return res;
     },
 
     _imgLoaded: false,
@@ -195,11 +203,7 @@ L.ImageTransform = L.ImageOverlay.extend({
         imgNode.style[L.DomUtil.TRANSFORM] = this._getMatrix3dCSS(this._matrix3d);
         if (this.options.clip) {
             if (this._pixelClipPoints) {
-                this.options.clip = {
-					type: 'MultiPolygon',
-					coordinates: this._coordsPixels(this._pixelClipPoints)
-				};
-                this._drawCanvas();
+               this._drawCanvas();
             } else {
                 this.setClip(this.options.clip);
             }
@@ -222,7 +226,7 @@ L.ImageTransform = L.ImageOverlay.extend({
 						pixel = L.ImageTransform.Utils.project(this._matrix3dInverse, mp.x - topLeft.x, mp.y - topLeft.y);
 						arr.push(L.point(pixel[0], pixel[1]));
 					} else {
-						pixel = ring[i];
+						pixel = ring[p];
 						tp = L.ImageTransform.Utils.project(this._matrix3d, pixel.x, pixel.y);
 						mp = this._map.layerPointToLatLng(L.point(tp[0] + topLeft.x, tp[1] + topLeft.y));
 						arr.push([mp.lng, mp.lat]);
