@@ -137,9 +137,7 @@ L.ImageTransform = L.ImageOverlay.extend({
 		if (this._imgNode.decode) {
 			this._imgNode.decode({notifyWhen: 'paintable'})		// {firstFrameOnly: true}
 				.then(L.bind(this._imageReady, this))
-				.catch(function (ev) {
-					throw new Error(ev);
-				});
+				.catch(this._onImageError.bind(this));
 		} else {
 			this._imageReady();
 		}
