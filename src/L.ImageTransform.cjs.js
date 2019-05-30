@@ -356,4 +356,4 @@ L.DomUtil.TRANSFORM_ORIGIN = L.DomUtil.testProp(
     };
 })();
 
-module.exports.image-transform = L.ImageTransform;
+module.exports = L.ImageTransform;
