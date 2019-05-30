@@ -1,5 +1,5 @@
 {
-  "name": "leaflet.imagetransform",
+  "name": "leaflet-imagetransform",
   "version": "1.0.0",
   "description": "Leaflet.imageTransform\r ======================",
   "main": "src/L.ImageTransform.cjs.js",
