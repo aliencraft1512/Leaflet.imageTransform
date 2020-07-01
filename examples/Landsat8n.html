@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Image Transform Plugin: Landsat Images</title>
+	<meta charset="utf-8" />
+
+    
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+	  integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+	  crossorigin=""/>
+	<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+	  integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+	  crossorigin=""></script>
+
+    <link rel="stylesheet" href="css/examples.css" />
+
+	<script src="../src/L.ImageTransform.js"></script>
+</head>
+<body>
+	<div id="map"></div>
+    <div class="outer-info">
+        <span class="leaflet-bar info">Click on scene boundaries to see quicklooks</span>
+    </div>
+    
+	<script>
+		var osmUrl = 'http://{s}.tile.osm.org/{z}/{x}/{y}.png',
+			osm = new L.TileLayer(osmUrl, {maxZoom: 18}),
+			map = new L.Map('map', {layers: [osm], center: [45, 60], zoom: 5});
+        
+		var url = 'data/LSR_LANDSAT_8_C1_437610.geojson';
+		fetch(url).then(req => req.json())
+			.then(json => {
+				console.log('gggggg', json);
+				var cnt = json.length - 1,
+					strPoint = 'Найдено объектов: <b>' + cnt + '</b>',
+					point;
+				geoJson = L.geoJSON(json, {
+					onEachFeature: function (feature, layer) {
+						if (feature.geometry.type === 'Point') {
+							point = layer.bindPopup(strPoint);
+						} else {
+						}
+					},
+					style: function (feature) {
+						return {fillOpacity: 0, color: feature.properties.color || 'blue'};
+					}
+				}).bindPopup(function (layer) {
+					var feature = layer.feature;
+					if (feature.geometry.type === 'Point') {
+						return strPoint;
+					}
+					// layer.options.color = 'red';
+					layer.setStyle({color: 'red', weight: 5});
+					showOneScene(layer.feature.properties);
+
+					layer.bringToBack();
+					return Object.keys(feature.properties).map(function (key) {
+						return key + ': <b>' + feature.properties[key] + '</b>';
+					}).join('<br>');
+				}).on('popupclose', function (ev) {
+					// console.log('gggggg', ev);
+					if (ev.layer.setStyle) { ev.layer.setStyle({color: 'blue', weight: 3}); }
+				}).on('add', function (ev) {
+					if (point) {
+						point.openPopup(point.latlng);
+					}
+				})
+				.addTo(map);
+			});
+
+        var showOneScene = function(item) {
+            var x1 = item.UL_LON, x2 = item.UR_LON, x3 = item.LR_LON, x4 = item.LL_LON;
+            var y1 = item.UL_LAT, y2 = item.UR_LAT, y3 = item.LR_LAT, y4 = item.LL_LAT;
+
+            var minx = Math.min(x1, x2, x3, x4),
+                maxx = Math.max(x1, x2, x3, x4),
+                miny = Math.min(y1, y2, y3, y4),
+                maxy = Math.max(y1, y2, y3, y4),
+                anchors = [
+                    [maxy, minx],
+                    [maxy, maxx],
+                    [miny, maxx],
+                    [miny, minx]
+                ],
+                clip = [
+                    [y1, x1],
+                    [y2, x2],
+                    [y3, x3],
+                    [y4, x4]
+                ],
+                options = {
+                    clip: clip
+                };
+            
+            // L.polygon(clip, {fillOpacity: 0, opacity: 1, weight: 2}).addTo(map).on('click', function() {
+                if (item._quicklook) {
+                    map.removeLayer(item._quicklook);
+                    item._quicklook = null;
+                } else {
+					var url = 'https://ims.cr.usgs.gov/browse/landsat_8_c1/2020';
+					url += '/' + item.WRS_PATH;
+					url += '/' + (item.WRS_ROW < 100 ? '0' : '') + item.WRS_ROW;
+					url += '/' + item.ID + '.jpg';
+
+                    item._quicklook = L.imageTransform(url, anchors, options).addTo(map).bringToBack();
+                }
+            // })
+        };
+        
+        // for (var s = 0; s < landsat8Scenes.length; s++) {
+            // showOneScene(landsat8Scenes[s]);
+        // }
+        
+	</script>
+    
+    <a href="https://github.com/ScanEx/Leaflet.imageTransform" target="_blank">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/a6677b08c955af8400f44c6298f40e7d19cc5b2d/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677261795f3664366436642e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png">
+    </a>
+</body>
+</html>
